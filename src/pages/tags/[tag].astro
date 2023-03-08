@@ -5,34 +5,31 @@ import BlogPost from '../../components/BlogPost.astro';
 export async function getStaticPaths() {
   const allPosts = await Astro.glob('../posts/*.md');
 
-  // Criar um Set a partir de uma versão flat de uma array contendo todas as tags de todos os posts.
+  // Criar um Array contendo um Set a partir de uma versão flat de uma array contendo todas as tags de todos os posts.
+  // Ou seja, teremos uma array com todas as tags, sem que elas se repitam.
   const uniqueTags = [...new Set(allPosts.map((post) => post.frontmatter.tags).flat())];
 
-  return [
-    // Cada um dos objetos na array é uma rota
-    // As rotas vão receber como props os dados de todos os posts
-    // params se refere ao caminho da url
-    {params: {tag: "astro"}, props: {posts: allPosts}},
-    {params: {tag: "successes"}, props: {posts: allPosts}},
-    {params: {tag: "community"}, props: {posts: allPosts}},
-    {params: {tag: "blogging"}, props: {posts: allPosts}},
-    {params: {tag: "setbacks"}, props: {posts: allPosts}},
-    {params: {tag: "learning in public"}, props: {posts: allPosts}}
-  ]
+  // Para cada tag, filtrar as postagens que a contém
+  // retornar uma rota com o param da tag, e com os posts filtrados
+  return uniqueTags.map((tag) => {
+    const filteredPosts = allPosts.filter((post) => post.frontmatter.tags.includes(tag));
+    return {
+      params: { tag },
+      props: { posts: filteredPosts },
+    };
+  });
 }
 
 // The received values of props and params to be used in the HTML template
 // go outside getStaticPaths
 
-// To receive information in the HTML template of a page route, write it outside getStaticPaths().
-
+// Informações que serão passadas para o HTML:
 const { tag } = Astro.params;
 const { posts } = Astro.props;
-const filteredPosts = posts.filter((post) => post.frontmatter.tags.includes(tag));
 ---
 <BaseLayout pageTitle={tag}>
   <p>Posts tagged with {tag}</p>
   <ul>
-    {filteredPosts.map(post => <BlogPost url={post.url} title={post.frontmatter.title}/>)}
+    {posts.map(post => <BlogPost url={post.url} title={post.frontmatter.title}/>)}
   </ul>
 </BaseLayout>
